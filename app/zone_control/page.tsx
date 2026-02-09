@@ -11,15 +11,24 @@ import { Compare } from "../components/Compare";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
-import { getZoneControlData } from "@/lib/data";
+import { getLatestVersion, getZoneControlData } from "@/lib/data";
 
-export default async function ZoneControlPage() {
-  const zoneControl = await getZoneControlData();
+export default async function ZoneControlPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ version: string }>;
+}) {
+  const { version } = await searchParams;
+  const versionToUse = version ?? (await getLatestVersion());
+  const zoneControl = await getZoneControlData(versionToUse);
 
   return (
     <div className="p-8 space-y-2">
       <div className="flex justify-between items-center">
-        <h2 className="font-bold text-2xl">Zone Control</h2>
+        <div>
+          <h2 className="font-bold text-2xl">Zone Control</h2>
+          <div>(Version: {versionToUse})</div>
+        </div>
         <div>
           <Link href="/">
             <Button>

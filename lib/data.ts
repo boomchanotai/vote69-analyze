@@ -2,6 +2,22 @@ import { ZoneControlItem, ZonePartyListControlItem } from "@/app/types";
 
 export const DEFAULT_VERSION = "20260209T120828";
 
+export const getLatestVersion = async () => {
+  const res = await fetch(
+    "https://election69.prd.go.th/data/live/latest.json",
+    {
+      cache: "no-store",
+    },
+  );
+
+  if (!res.ok) {
+    throw new Error("Failed to fetch latest version");
+  }
+
+  const json = (await res.json()) as { folder: string };
+  return json.folder;
+};
+
 export const getZoneControlData = async (version?: string) => {
   const versionToUse = version ?? DEFAULT_VERSION;
 
