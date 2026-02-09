@@ -1,8 +1,12 @@
 import { ZoneControlItem, ZonePartyListControlItem } from "@/app/types";
 
-export const getZoneControlData = async () => {
+export const DEFAULT_VERSION = "20260209T120828";
+
+export const getZoneControlData = async (version?: string) => {
+  const versionToUse = version ?? DEFAULT_VERSION;
+
   const res = await fetch(
-    "https://election69.prd.go.th/data/live/versions/20260209T130828/zone_control.json",
+    `https://election69.prd.go.th/data/live/versions/${versionToUse}/zone_control.json`,
     {
       // Always fetch latest live data
       cache: "no-store",
@@ -25,9 +29,11 @@ export const getZoneControlData = async () => {
   return zoneControl;
 };
 
-export const getZonePartyListControlData = async () => {
+export const getZonePartyListControlData = async (version?: string) => {
+  const versionToUse = version ?? DEFAULT_VERSION;
+
   const res = await fetch(
-    "https://election69.prd.go.th/data/live/versions/20260209T130828/zone_partylist_control.json",
+    `https://election69.prd.go.th/data/live/versions/${versionToUse}/zone_partylist_control.json`,
     {
       // Always fetch latest live data
       cache: "no-store",
