@@ -33,10 +33,7 @@ export function ZonePartyFilter({
   }
 
   return (
-    <Select
-      value={currentPartyId ?? "__all__"}
-      onValueChange={onValueChange}
-    >
+    <Select value={currentPartyId ?? "__all__"} onValueChange={onValueChange}>
       <SelectTrigger className="w-[240px]">
         <SelectValue placeholder="All zones" />
       </SelectTrigger>
@@ -44,7 +41,7 @@ export function ZonePartyFilter({
         <SelectItem value="__all__">All zones</SelectItem>
         {parties.map((p) => (
           <SelectItem key={p.party_id} value={p.party_id}>
-            {p.party} (rank 1 only)
+            {p.party_id} {p.party} (rank 1 only)
           </SelectItem>
         ))}
       </SelectContent>

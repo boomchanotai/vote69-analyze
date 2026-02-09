@@ -133,7 +133,7 @@ export default async function CompareVersionsPage({
   }
   const partyList = Array.from(partySet.entries())
     .map(([party_id, party]) => ({ party_id, party }))
-    .sort((a, b) => a.party.localeCompare(b.party));
+    .sort((a, b) => Number(a.party_id) - Number(b.party_id));
 
   // Optional filter: only zones where this party has rank 1 (using version A)
   const filteredGroupList = partyFilter
