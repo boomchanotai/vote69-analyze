@@ -1,6 +1,15 @@
 import { DEFAULT_VERSION, getZoneControlData } from "@/lib/data";
 import { ZoneControlItem } from "@/app/types";
 import { cn } from "@/lib/utils";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 type CandidateKey = string;
 
@@ -64,6 +73,29 @@ export default async function CompareVersionsPage({
     },
   );
 
+  // Group by province + zone
+  const groupKey = (key: CandidateKey) => {
+    const item = mapA.get(key) ?? mapB.get(key)!;
+    return `${item.zone.province_id}-${item.zone.zone}`;
+  };
+  const groups = new Map<
+    string,
+    { province: string; zone: string; keys: CandidateKey[] }
+  >();
+  for (const key of allKeys) {
+    const item = mapA.get(key) ?? mapB.get(key)!;
+    const gk = groupKey(key);
+    if (!groups.has(gk)) {
+      groups.set(gk, {
+        province: item.zone.province,
+        zone: item.zone.zone,
+        keys: [],
+      });
+    }
+    groups.get(gk)!.keys.push(key);
+  }
+  const groupList = Array.from(groups.values());
+
   return (
     <div className="p-8 space-y-4">
       <h2 className="font-bold text-2xl">Compare Zone Control Versions</h2>
@@ -76,92 +108,100 @@ export default async function CompareVersionsPage({
         </code>
       </div>
 
-      <div className="flex flex-wrap gap-6 items-center rounded-lg border bg-card p-4 text-card-foreground shadow-sm">
-        <div>
-          <span className="text-muted-foreground text-sm">
-            Total votes (A):{" "}
-          </span>
-          <span className="font-medium">{totalVotesA.toLocaleString()}</span>
-        </div>
-        <div>
-          <span className="text-muted-foreground text-sm">
-            Total votes (B):{" "}
-          </span>
-          <span className="font-medium">{totalVotesB.toLocaleString()}</span>
-        </div>
-        <div>
-          <span className="text-muted-foreground text-sm">Diff (B − A): </span>
-          <span
-            className={cn(
-              "font-medium",
-              totalVotesDiff === 0
-                ? "text-muted-foreground"
-                : totalVotesDiff > 0
-                  ? "text-green-600"
-                  : "text-red-600",
-            )}
-          >
-            {totalVotesDiff >= 0 ? "+" : ""}
-            {totalVotesDiff.toLocaleString()}
-          </span>
-        </div>
-      </div>
+      <Card>
+        <CardContent className="flex flex-wrap gap-6 items-center">
+          <div>
+            <span className="text-muted-foreground text-sm">
+              Total votes (A):{" "}
+            </span>
+            <span className="font-medium">{totalVotesA.toLocaleString()}</span>
+          </div>
+          <div>
+            <span className="text-muted-foreground text-sm">
+              Total votes (B):{" "}
+            </span>
+            <span className="font-medium">{totalVotesB.toLocaleString()}</span>
+          </div>
+          <div>
+            <span className="text-muted-foreground text-sm">
+              Diff (B − A):{" "}
+            </span>
+            <span
+              className={cn(
+                "font-medium",
+                totalVotesDiff === 0
+                  ? "text-muted-foreground"
+                  : totalVotesDiff > 0
+                    ? "text-green-600"
+                    : "text-red-600",
+              )}
+            >
+              {totalVotesDiff >= 0 ? "+" : ""}
+              {totalVotesDiff.toLocaleString()}
+            </span>
+          </div>
+        </CardContent>
+      </Card>
 
-      <div className="overflow-x-auto">
-        <table className="w-full text-sm border-collapse">
-          <thead>
-            <tr className="border-b">
-              <th className="px-2 py-1 text-left">Province</th>
-              <th className="px-2 py-1 text-left">Zone</th>
-              <th className="px-2 py-1 text-left">Candidate No</th>
-              <th className="px-2 py-1 text-left">First Name</th>
-              <th className="px-2 py-1 text-left">Last Name</th>
-              <th className="px-2 py-1 text-left">Party</th>
-              <th className="px-2 py-1 text-right">Votes (A)</th>
-              <th className="px-2 py-1 text-right">Votes (B)</th>
-              <th className="px-2 py-1 text-right">Diff (B - A)</th>
-            </tr>
-          </thead>
-          <tbody>
-            {allKeys.map((key) => {
-              const a = mapA.get(key);
-              const b = mapB.get(key);
-              const zone = (a ?? b)!.zone;
-              const candidate = (a ?? b)!.candidate;
-
-              const votesA = a?.candidate.vote ?? 0;
-              const votesB = b?.candidate.vote ?? 0;
-              const diff = votesB - votesA;
-
-              return (
-                <tr key={key} className="border-b">
-                  <td className="px-2 py-1">{zone.province}</td>
-                  <td className="px-2 py-1">{zone.zone}</td>
-                  <td className="px-2 py-1 text-right">
-                    {candidate.candidate_no}
-                  </td>
-                  <td className="px-2 py-1">{candidate.first_name}</td>
-                  <td className="px-2 py-1">{candidate.last_name}</td>
-                  <td className="px-2 py-1">{candidate.party}</td>
-                  <td className="px-2 py-1 text-right">{votesA}</td>
-                  <td className="px-2 py-1 text-right">{votesB}</td>
-                  <td
-                    className={cn(
-                      "px-2 py-1 text-right",
-                      diff === 0
-                        ? "text-muted-foreground"
-                        : diff > 0
-                          ? "text-green-600"
-                          : "text-red-600",
-                    )}
-                  >
-                    {diff}
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {groupList.map((group) => (
+          <Card key={`${group.province}-${group.zone}`}>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base">
+                {group.province} เขต {group.zone}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="pt-0">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Rank</TableHead>
+                    <TableHead>Party</TableHead>
+                    <TableHead>First Name</TableHead>
+                    <TableHead>Last Name</TableHead>
+                    <TableHead className="text-right">Vote (A)</TableHead>
+                    <TableHead className="text-right">Vote (B)</TableHead>
+                    <TableHead className="text-right">Diff</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {group.keys.map((key) => {
+                    const a = mapA.get(key);
+                    const b = mapB.get(key);
+                    const candidate = (a ?? b)!.candidate;
+                    const votesA = a?.candidate.vote ?? 0;
+                    const votesB = b?.candidate.vote ?? 0;
+                    const diff = votesB - votesA;
+                    return (
+                      <TableRow key={key}>
+                        <TableCell>{candidate.rank}</TableCell>
+                        <TableCell>
+                          {candidate.party} ({candidate.party_id})
+                        </TableCell>
+                        <TableCell>{candidate.first_name}</TableCell>
+                        <TableCell>{candidate.last_name}</TableCell>
+                        <TableCell className="text-right">{votesA}</TableCell>
+                        <TableCell className="text-right">{votesB}</TableCell>
+                        <TableCell
+                          className={cn(
+                            "text-right",
+                            diff === 0
+                              ? "text-muted-foreground"
+                              : diff > 0
+                                ? "text-green-600"
+                                : "text-red-600",
+                          )}
+                        >
+                          {diff}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        ))}
       </div>
     </div>
   );
