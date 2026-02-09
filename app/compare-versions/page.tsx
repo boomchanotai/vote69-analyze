@@ -1,13 +1,6 @@
-import { getZoneControlData } from "@/lib/data";
+import { DEFAULT_VERSION, getZoneControlData } from "@/lib/data";
 import { ZoneControlItem } from "@/app/types";
 import { cn } from "@/lib/utils";
-
-interface CompareVersionsPageProps {
-  searchParams: {
-    a?: string;
-    b?: string;
-  };
-}
 
 type CandidateKey = string;
 
@@ -30,11 +23,16 @@ function buildCandidateMap(items: ZoneControlItem[]) {
   return map;
 }
 
+// test: ?a=20260209T040828&b=20260209T150828
+
 export default async function CompareVersionsPage({
   searchParams,
-}: CompareVersionsPageProps) {
-  const versionA = searchParams.a ?? "20260209T120828";
-  const versionB = searchParams.b ?? "20260209T130828";
+}: {
+  searchParams: Promise<{ a: string; b: string }>;
+}) {
+  const { a, b } = await searchParams;
+  const versionA = a ?? DEFAULT_VERSION;
+  const versionB = b ?? DEFAULT_VERSION;
 
   const [zoneA, zoneB] = await Promise.all([
     getZoneControlData(versionA),
@@ -69,7 +67,9 @@ export default async function CompareVersionsPage({
         Comparing version {versionA} with {versionB}. You can change versions by
         editing the URL query parameters, for example:
         <br />
-        <code>/compare-versions?a=20260209T120828&b=20260209T130828</code>
+        <code>
+          /compare-versions?a={versionA}&b={versionB}
+        </code>
       </div>
 
       <div className="overflow-x-auto">
