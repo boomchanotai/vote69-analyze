@@ -7,20 +7,14 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { ZoneControlItem } from "../types";
-import ZoneControl from "../zone_control.json";
 import { Compare } from "../components/Compare";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
+import { getZoneControlData } from "@/lib/data";
 
-export default function ZoneControlPage() {
-  const zoneControl = (ZoneControl as ZoneControlItem[]).sort((a, b) => {
-    const provinceDiff =
-      Number(a.info_zone.province_id) - Number(b.info_zone.province_id);
-    if (provinceDiff !== 0) return provinceDiff;
-    return Number(a.info_zone.zone) - Number(b.info_zone.zone);
-  });
+export default async function ZoneControlPage() {
+  const zoneControl = await getZoneControlData();
 
   return (
     <div className="p-8 space-y-2">

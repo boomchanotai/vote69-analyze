@@ -1,6 +1,4 @@
 import { cn } from "@/lib/utils";
-import { ZonePartyListControlItem } from "./types";
-import ZonePartyListControl from "./zone_partylist_control.json";
 import {
   Table,
   TableBody,
@@ -13,10 +11,10 @@ import { Compare } from "./components/Compare";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
+import { getZonePartyListControlData } from "@/lib/data";
 
-export default function Home() {
-  const zonePartyListControl =
-    ZonePartyListControl as ZonePartyListControlItem[];
+export default async function Home() {
+  const zonePartyListControl = await getZonePartyListControlData();
 
   return (
     <div className="p-8 space-y-2">

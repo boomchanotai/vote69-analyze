@@ -1,12 +1,9 @@
-import ZonePartyListControl from "../zone_partylist_control.json";
-import ZoneControl from "../zone_control.json";
-import { ZoneControlItem, ZonePartyListControlItem } from "../types";
+import { getZoneControlData, getZonePartyListControlData } from "@/lib/data";
 import { cn } from "@/lib/utils";
 
-export const Compare = () => {
-  const zonePartyListControl =
-    ZonePartyListControl as ZonePartyListControlItem[];
-  const zoneControl = ZoneControl as ZoneControlItem[];
+export const Compare = async () => {
+  const zonePartyListControl = await getZonePartyListControlData();
+  const zoneControl = await getZoneControlData();
   const totalZonePartyListControlVotes = zonePartyListControl.reduce(
     (acc, curr) => acc + curr.info_zone.total_vote,
     0,
