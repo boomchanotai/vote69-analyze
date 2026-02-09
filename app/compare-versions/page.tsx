@@ -42,6 +42,10 @@ export default async function CompareVersionsPage({
   const mapA = buildCandidateMap(zoneA);
   const mapB = buildCandidateMap(zoneB);
 
+  const totalVotesA = zoneA.reduce((acc, z) => acc + z.info_zone.total_vote, 0);
+  const totalVotesB = zoneB.reduce((acc, z) => acc + z.info_zone.total_vote, 0);
+  const totalVotesDiff = totalVotesB - totalVotesA;
+
   const allKeys = Array.from(new Set([...mapA.keys(), ...mapB.keys()])).sort(
     (ka, kb) => {
       const a = mapA.get(ka) ?? mapB.get(ka)!;
@@ -70,6 +74,37 @@ export default async function CompareVersionsPage({
         <code>
           /compare-versions?a={versionA}&b={versionB}
         </code>
+      </div>
+
+      <div className="flex flex-wrap gap-6 items-center rounded-lg border bg-card p-4 text-card-foreground shadow-sm">
+        <div>
+          <span className="text-muted-foreground text-sm">
+            Total votes (A):{" "}
+          </span>
+          <span className="font-medium">{totalVotesA.toLocaleString()}</span>
+        </div>
+        <div>
+          <span className="text-muted-foreground text-sm">
+            Total votes (B):{" "}
+          </span>
+          <span className="font-medium">{totalVotesB.toLocaleString()}</span>
+        </div>
+        <div>
+          <span className="text-muted-foreground text-sm">Diff (B − A): </span>
+          <span
+            className={cn(
+              "font-medium",
+              totalVotesDiff === 0
+                ? "text-muted-foreground"
+                : totalVotesDiff > 0
+                  ? "text-green-600"
+                  : "text-red-600",
+            )}
+          >
+            {totalVotesDiff >= 0 ? "+" : ""}
+            {totalVotesDiff.toLocaleString()}
+          </span>
+        </div>
       </div>
 
       <div className="overflow-x-auto">
