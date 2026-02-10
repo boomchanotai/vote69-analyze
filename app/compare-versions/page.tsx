@@ -17,6 +17,11 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { ZonePartyFilter } from "./ZonePartyFilter";
+import {
+  ZoneSortSelect,
+  type SortOption,
+  type SortVersion,
+} from "./ZoneSortSelect";
 
 type CandidateKey = string;
 
@@ -58,9 +63,16 @@ function formatVersionToThaiTime(version: string): string {
 export default async function CompareVersionsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ a?: string; b?: string; party?: string }>;
+  searchParams: Promise<{
+    a?: string;
+    b?: string;
+    party?: string;
+    sort?: string;
+    sortVer?: string;
+  }>;
 }) {
-  const { a, b, party: partyFilter } = await searchParams;
+  const { a, b, party: partyFilter, sort: sortParam, sortVer: sortVerParam } =
+    await searchParams;
   const versionA = a ?? DEFAULT_VERSION;
   const versionB = b ?? DEFAULT_VERSION;
 
@@ -147,6 +159,51 @@ export default async function CompareVersionsPage({
       })
     : groupList;
 
+  // Sort by invalid_vote % or turnout % (using version A or B), optional
+  const sortOption = (
+    ["", "invalid_asc", "invalid_desc", "turnout_asc", "turnout_desc"].includes(
+      sortParam ?? "",
+    )
+      ? (sortParam ?? "")
+      : ""
+  ) as SortOption;
+
+  const sortVer: SortVersion =
+    sortVerParam === "b" ? "b" : "a";
+
+  const zoneInfoForSort =
+    sortVer === "b" ? zoneInfoByIdB : zoneInfoByIdA;
+
+  const getZoneId = (group: (typeof groupList)[number]) =>
+    group.keys[0].split("-").slice(0, -1).join("-");
+
+  const sortedGroupList = [...filteredGroupList].sort((ga, gb) => {
+    if (!sortOption) return 0;
+    const idA = getZoneId(ga);
+    const idB = getZoneId(gb);
+    const infoA = zoneInfoForSort.get(idA);
+    const infoB = zoneInfoForSort.get(idB);
+    const invalidPct = (info: typeof infoA) =>
+      info && info.total_vote ? (info.invalid_vote / info.total_vote) * 100 : 0;
+    const turnoutPct = (info: typeof infoA) =>
+      info && info.eligible ? (info.total_vote / info.eligible) * 100 : 0;
+    if (
+      sortOption === "invalid_asc" ||
+      sortOption === "invalid_desc" ||
+      sortOption === "turnout_asc" ||
+      sortOption === "turnout_desc"
+    ) {
+      const isInvalid =
+        sortOption === "invalid_asc" || sortOption === "invalid_desc";
+      const asc = sortOption === "invalid_asc" || sortOption === "turnout_asc";
+      const aVal = isInvalid ? invalidPct(infoA) : turnoutPct(infoA);
+      const bVal = isInvalid ? invalidPct(infoB) : turnoutPct(infoB);
+      const d = aVal - bVal;
+      return asc ? d : -d;
+    }
+    return 0;
+  });
+
   return (
     <div className="p-8 space-y-4">
       <h2 className="font-bold text-2xl">Compare Zone Control Versions</h2>
@@ -194,18 +251,27 @@ export default async function CompareVersionsPage({
         </CardContent>
       </Card>
 
-      <div className="flex flex-wrap items-center gap-2">
-        <span className="text-sm text-muted-foreground">
-          Filter zone by party rank 1:
-        </span>
-        <ZonePartyFilter
-          parties={partyList}
-          currentPartyId={partyFilter ?? null}
-        />
+      <div className="flex flex-wrap items-center gap-4">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-sm text-muted-foreground">
+            Filter zone by party rank 1:
+          </span>
+          <ZonePartyFilter
+            parties={partyList}
+            currentPartyId={partyFilter ?? null}
+          />
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-sm text-muted-foreground">Sort:</span>
+          <ZoneSortSelect
+            currentSort={sortOption}
+            currentSortVer={sortVer}
+          />
+        </div>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {filteredGroupList.map((group) => (
+        {sortedGroupList.map((group) => (
           <Card key={`${group.province}-${group.zone}`}>
             <CardHeader className="pb-2">
               <CardTitle className="text-base">
@@ -236,24 +302,24 @@ export default async function CompareVersionsPage({
                   { label: "Invalid vote", key: "invalid_vote" },
                   { label: "No vote", key: "no_vote" },
                 ];
+                const pctInvalid = (inv: number, total: number) =>
+                  total ? (inv / total) * 100 : 0;
+                const pctTurnout = (total: number, eligible: number) =>
+                  eligible ? (total / eligible) * 100 : 0;
+                const INVALID_PCT_THRESHOLD = 10;
+
                 return (
                   <div className="mb-4 rounded-md border p-3 text-sm">
-                    <table className="w-full border-collapse text-left">
-                      <thead>
-                        <tr className="border-b">
-                          <th className="py-1 pr-2 font-medium"></th>
-                          <th className="py-1 px-2 text-right font-medium">
-                            A
-                          </th>
-                          <th className="py-1 px-2 text-right font-medium">
-                            B
-                          </th>
-                          <th className="py-1 px-2 text-right font-medium">
-                            Diff
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody>
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="w-auto"></TableHead>
+                          <TableHead className="text-right">A</TableHead>
+                          <TableHead className="text-right">B</TableHead>
+                          <TableHead className="text-right">Diff</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
                         {rows.map(({ label, key }) => {
                           const a = infoA?.[key] ?? 0;
                           const b = infoB?.[key] ?? 0;
@@ -261,24 +327,97 @@ export default async function CompareVersionsPage({
                             typeof a === "number" && typeof b === "number"
                               ? b - a
                               : null;
+                          const isInvalidVote = key === "invalid_vote";
+                          const isEligible = key === "eligible";
+                          const totalA = infoA?.total_vote ?? 0;
+                          const totalB = infoB?.total_vote ?? 0;
+                          const eligibleA = infoA?.eligible ?? 0;
+                          const eligibleB = infoB?.eligible ?? 0;
+                          const pctA = isInvalidVote
+                            ? pctInvalid(typeof a === "number" ? a : 0, totalA)
+                            : null;
+                          const pctB = isInvalidVote
+                            ? pctInvalid(typeof b === "number" ? b : 0, totalB)
+                            : null;
+                          const turnoutA = isEligible
+                            ? pctTurnout(totalA, eligibleA)
+                            : null;
+                          const turnoutB = isEligible
+                            ? pctTurnout(totalB, eligibleB)
+                            : null;
+                          const redA =
+                            isInvalidVote &&
+                            pctA !== null &&
+                            pctA > INVALID_PCT_THRESHOLD;
+                          const redB =
+                            isInvalidVote &&
+                            pctB !== null &&
+                            pctB > INVALID_PCT_THRESHOLD;
+
                           return (
-                            <tr key={key} className="border-b last:border-0">
-                              <td className="py-1 pr-2 text-muted-foreground">
+                            <TableRow key={key}>
+                              <TableCell className="text-muted-foreground">
                                 {label}
-                              </td>
-                              <td className="py-1 px-2 text-right">
-                                {typeof a === "number"
-                                  ? a.toLocaleString()
-                                  : "-"}
-                              </td>
-                              <td className="py-1 px-2 text-right">
-                                {typeof b === "number"
-                                  ? b.toLocaleString()
-                                  : "-"}
-                              </td>
-                              <td
+                              </TableCell>
+                              <TableCell
                                 className={cn(
-                                  "py-1 px-2 text-right",
+                                  "text-right",
+                                  redA && "text-red-600 font-medium",
+                                )}
+                              >
+                                {typeof a === "number" ? (
+                                  isInvalidVote && totalA > 0 ? (
+                                    <>
+                                      {a.toLocaleString()}{" "}
+                                      <span className="text-muted-foreground">
+                                        ({(pctA ?? 0).toFixed(1)}%)
+                                      </span>
+                                    </>
+                                  ) : isEligible && eligibleA > 0 ? (
+                                    <>
+                                      {a.toLocaleString()}{" "}
+                                      <span className="text-muted-foreground">
+                                        ({(turnoutA ?? 0).toFixed(1)}% turnout)
+                                      </span>
+                                    </>
+                                  ) : (
+                                    a.toLocaleString()
+                                  )
+                                ) : (
+                                  "-"
+                                )}
+                              </TableCell>
+                              <TableCell
+                                className={cn(
+                                  "text-right",
+                                  redB && "text-red-600 font-medium",
+                                )}
+                              >
+                                {typeof b === "number" ? (
+                                  isInvalidVote && totalB > 0 ? (
+                                    <>
+                                      {b.toLocaleString()}{" "}
+                                      <span className="text-muted-foreground">
+                                        ({(pctB ?? 0).toFixed(1)}%)
+                                      </span>
+                                    </>
+                                  ) : isEligible && eligibleB > 0 ? (
+                                    <>
+                                      {b.toLocaleString()}{" "}
+                                      <span className="text-muted-foreground">
+                                        ({(turnoutB ?? 0).toFixed(1)}% turnout)
+                                      </span>
+                                    </>
+                                  ) : (
+                                    b.toLocaleString()
+                                  )
+                                ) : (
+                                  "-"
+                                )}
+                              </TableCell>
+                              <TableCell
+                                className={cn(
+                                  "text-right",
                                   diff !== null && diff !== 0
                                     ? diff > 0
                                       ? "text-green-600"
@@ -290,12 +429,12 @@ export default async function CompareVersionsPage({
                                   ? (diff >= 0 ? "+" : "") +
                                     diff.toLocaleString()
                                   : "-"}
-                              </td>
-                            </tr>
+                              </TableCell>
+                            </TableRow>
                           );
                         })}
-                      </tbody>
-                    </table>
+                      </TableBody>
+                    </Table>
                   </div>
                 );
               })()}
