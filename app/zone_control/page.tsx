@@ -8,6 +8,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Compare } from "../components/Compare";
+import { CloseRaceInvalidFlips } from "../components/CloseRaceInvalidFlips";
+import { CloseRaceInvalidFlipsSortSelect } from "../components/CloseRaceInvalidFlipsSortSelect";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
@@ -16,11 +18,14 @@ import { getLatestVersion, getZoneControlData } from "@/lib/data";
 export default async function ZoneControlPage({
   searchParams,
 }: {
-  searchParams: Promise<{ version: string }>;
+  searchParams: Promise<{ version?: string; sortInvalid?: string }>;
 }) {
-  const { version } = await searchParams;
+  const { version, sortInvalid } = await searchParams;
   const versionToUse = version ?? (await getLatestVersion());
   const zoneControl = await getZoneControlData(versionToUse);
+
+  const sortInvalidOrder =
+    sortInvalid === "asc" || sortInvalid === "desc" ? sortInvalid : "";
 
   return (
     <div className="p-8 space-y-2">
@@ -39,10 +44,19 @@ export default async function ZoneControlPage({
       </div>
       <div>{zoneControl.length} zones</div>
       <Compare />
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="text-sm text-muted-foreground">
+          Close-race zones sort by invalid:
+        </span>
+        <CloseRaceInvalidFlipsSortSelect currentSort={sortInvalidOrder} />
+      </div>
+      <CloseRaceInvalidFlips
+        zoneControl={zoneControl}
+        sortInvalidOrder={sortInvalidOrder}
+      />
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Province</TableHead>
             <TableHead>Zone</TableHead>
             <TableHead>มีสิทธิ์</TableHead>
             <TableHead>โหวตทั้งหมด</TableHead>
@@ -67,8 +81,9 @@ export default async function ZoneControlPage({
 
             return (
               <TableRow key={index}>
-                <TableCell>{item.info_zone.province}</TableCell>
-                <TableCell>{item.info_zone.zone}</TableCell>
+                <TableCell>
+                  {item.info_zone.province} เขต {item.info_zone.zone}
+                </TableCell>
                 <TableCell>{item.info_zone.eligible}</TableCell>
                 <TableCell>{item.info_zone.total_vote}</TableCell>
                 <TableCell>{item.info_zone.good_vote}</TableCell>

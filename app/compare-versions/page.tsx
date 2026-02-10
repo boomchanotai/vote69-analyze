@@ -71,8 +71,13 @@ export default async function CompareVersionsPage({
     sortVer?: string;
   }>;
 }) {
-  const { a, b, party: partyFilter, sort: sortParam, sortVer: sortVerParam } =
-    await searchParams;
+  const {
+    a,
+    b,
+    party: partyFilter,
+    sort: sortParam,
+    sortVer: sortVerParam,
+  } = await searchParams;
   const versionA = a ?? DEFAULT_VERSION;
   const versionB = b ?? DEFAULT_VERSION;
 
@@ -168,11 +173,9 @@ export default async function CompareVersionsPage({
       : ""
   ) as SortOption;
 
-  const sortVer: SortVersion =
-    sortVerParam === "b" ? "b" : "a";
+  const sortVer: SortVersion = sortVerParam === "b" ? "b" : "a";
 
-  const zoneInfoForSort =
-    sortVer === "b" ? zoneInfoByIdB : zoneInfoByIdA;
+  const zoneInfoForSort = sortVer === "b" ? zoneInfoByIdB : zoneInfoByIdA;
 
   const getZoneId = (group: (typeof groupList)[number]) =>
     group.keys[0].split("-").slice(0, -1).join("-");
@@ -263,10 +266,7 @@ export default async function CompareVersionsPage({
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-sm text-muted-foreground">Sort:</span>
-          <ZoneSortSelect
-            currentSort={sortOption}
-            currentSortVer={sortVer}
-          />
+          <ZoneSortSelect currentSort={sortOption} currentSortVer={sortVer} />
         </div>
       </div>
 
