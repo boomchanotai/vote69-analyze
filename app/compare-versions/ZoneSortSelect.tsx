@@ -8,6 +8,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 
 export type SortOption =
   | ""
@@ -55,43 +56,63 @@ export function ZoneSortSelect({
     }
   }
 
+  const sortTotalChecked = searchParams.get("sortTotal") === "1";
+
+  function onSortTotalChange(nextChecked: boolean | "indeterminate") {
+    const next = new URLSearchParams(searchParams);
+
+    if (nextChecked) {
+      next.set("sortTotal", "1");
+    } else {
+      next.delete("sortTotal");
+    }
+
+    router.push(`${pathname}?${next.toString()}`);
+  }
+
   return (
-    <div className="flex flex-wrap items-center gap-2">
-      <Select
-        value={currentSort || "__none__"}
-        onValueChange={onSortChange}
-      >
-        <SelectTrigger className="w-[220px]">
-          <SelectValue placeholder="Sort by..." />
-        </SelectTrigger>
-        <SelectContent>
-          {SORT_OPTIONS.map((opt) => (
-            <SelectItem
-              key={opt.value || "__none__"}
-              value={opt.value || "__none__"}
-            >
-              {opt.label}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-      {(currentSort && currentSort !== "__none__") ? (
-        <>
-          <span className="text-sm text-muted-foreground">using</span>
-          <Select
-            value={currentSortVer}
-            onValueChange={onSortVerChange}
-          >
-            <SelectTrigger className="w-[72px]">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="a">A</SelectItem>
-              <SelectItem value="b">B</SelectItem>
-            </SelectContent>
-          </Select>
-        </>
-      ) : null}
+    <div className="flex flex-wrap items-center gap-4">
+      <div className="flex flex-wrap items-center gap-2">
+        <Select
+          value={currentSort || "__none__"}
+          onValueChange={onSortChange}
+        >
+          <SelectTrigger className="w-[220px]">
+            <SelectValue placeholder="Sort by..." />
+          </SelectTrigger>
+          <SelectContent>
+            {SORT_OPTIONS.map((opt) => (
+              <SelectItem
+                key={opt.value || "__none__"}
+                value={opt.value || "__none__"}
+              >
+                {opt.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        {currentSort ? (
+          <>
+            <span className="text-sm text-muted-foreground">using</span>
+            <Select value={currentSortVer} onValueChange={onSortVerChange}>
+              <SelectTrigger className="w-[72px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="a">A</SelectItem>
+                <SelectItem value="b">B</SelectItem>
+              </SelectContent>
+            </Select>
+          </>
+        ) : null}
+      </div>
+      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+        <Checkbox
+          checked={sortTotalChecked}
+          onCheckedChange={onSortTotalChange}
+        />
+        <span>Sort zones by total votes diff (B − A) desc</span>
+      </div>
     </div>
   );
 }

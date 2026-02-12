@@ -69,6 +69,7 @@ export default async function CompareVersionsPage({
     party?: string;
     sort?: string;
     sortVer?: string;
+    sortTotal?: string;
   }>;
 }) {
   const {
@@ -77,6 +78,7 @@ export default async function CompareVersionsPage({
     party: partyFilter,
     sort: sortParam,
     sortVer: sortVerParam,
+    sortTotal: sortTotalParam,
   } = await searchParams;
   const versionA = a ?? DEFAULT_VERSION;
   const versionB = b ?? DEFAULT_VERSION;
@@ -173,6 +175,8 @@ export default async function CompareVersionsPage({
       : ""
   ) as SortOption;
 
+  const sortByTotal = sortTotalParam === "1";
+
   const sortVer: SortVersion = sortVerParam === "b" ? "b" : "a";
 
   const zoneInfoForSort = sortVer === "b" ? zoneInfoByIdB : zoneInfoByIdA;
@@ -181,9 +185,30 @@ export default async function CompareVersionsPage({
     group.keys[0].split("-").slice(0, -1).join("-");
 
   const sortedGroupList = [...filteredGroupList].sort((ga, gb) => {
-    if (!sortOption) return 0;
     const idA = getZoneId(ga);
     const idB = getZoneId(gb);
+
+    if (sortByTotal) {
+      const infoA_A = zoneInfoByIdA.get(idA);
+      const infoA_B = zoneInfoByIdB.get(idA);
+      const infoB_A = zoneInfoByIdA.get(idB);
+      const infoB_B = zoneInfoByIdB.get(idB);
+      const diffA =
+        (infoA_B?.total_vote ?? 0) - (infoA_A?.total_vote ?? 0);
+      const diffB =
+        (infoB_B?.total_vote ?? 0) - (infoB_A?.total_vote ?? 0);
+
+      const aZero = diffA === 0;
+      const bZero = diffB === 0;
+
+      if (aZero && !bZero) return 1; // move A (zero) after B (non-zero)
+      if (!aZero && bZero) return -1; // move A (non-zero) before B (zero)
+
+      return diffB - diffA; // among non-zero (or both zero), DESC by diff
+    }
+
+    if (!sortOption) return 0;
+
     const infoA = zoneInfoForSort.get(idA);
     const infoB = zoneInfoForSort.get(idB);
     const invalidPct = (info: typeof infoA) =>
