@@ -1,4 +1,5 @@
 import { DEFAULT_VERSION, getZoneControlData } from "@/lib/data";
+import validVersions from "@/scripts/valid-version.json";
 import { ZoneControlItem } from "@/app/types";
 import { cn } from "@/lib/utils";
 import {
@@ -22,6 +23,7 @@ import {
   type SortOption,
   type SortVersion,
 } from "./ZoneSortSelect";
+import { VersionSelect } from "./VersionSelect";
 
 type CandidateKey = string;
 
@@ -72,6 +74,9 @@ export default async function CompareVersionsPage({
     sortTotal?: string;
   }>;
 }) {
+  const versions = (validVersions as string[]).slice().sort();
+  const latestVersion = versions[versions.length - 1] ?? DEFAULT_VERSION;
+
   const {
     a,
     b,
@@ -80,8 +85,8 @@ export default async function CompareVersionsPage({
     sortVer: sortVerParam,
     sortTotal: sortTotalParam,
   } = await searchParams;
-  const versionA = a ?? DEFAULT_VERSION;
-  const versionB = b ?? DEFAULT_VERSION;
+  const versionA = a ?? latestVersion;
+  const versionB = b ?? latestVersion;
 
   const [zoneA, zoneB] = await Promise.all([
     getZoneControlData(versionA),
@@ -245,36 +250,49 @@ export default async function CompareVersionsPage({
       </div>
 
       <Card>
-        <CardContent className="flex flex-wrap gap-6 items-center">
-          <div>
-            <span className="text-muted-foreground text-sm">
-              Total votes (A):{" "}
-            </span>
-            <span className="font-medium">{totalVotesA.toLocaleString()}</span>
+        <CardContent className="flex flex-col gap-4">
+          <div className="flex flex-wrap gap-6 items-center">
+            <div>
+              <span className="text-muted-foreground text-sm">
+                Total votes (A):{" "}
+              </span>
+              <span className="font-medium">
+                {totalVotesA.toLocaleString()}
+              </span>
+            </div>
+            <div>
+              <span className="text-muted-foreground text-sm">
+                Total votes (B):{" "}
+              </span>
+              <span className="font-medium">
+                {totalVotesB.toLocaleString()}
+              </span>
+            </div>
+            <div>
+              <span className="text-muted-foreground text-sm">
+                Diff (B − A):{" "}
+              </span>
+              <span
+                className={cn(
+                  "font-medium",
+                  totalVotesDiff === 0
+                    ? "text-muted-foreground"
+                    : totalVotesDiff > 0
+                      ? "text-green-600"
+                      : "text-red-600",
+                )}
+              >
+                {totalVotesDiff >= 0 ? "+" : ""}
+                {totalVotesDiff.toLocaleString()}
+              </span>
+            </div>
           </div>
-          <div>
-            <span className="text-muted-foreground text-sm">
-              Total votes (B):{" "}
-            </span>
-            <span className="font-medium">{totalVotesB.toLocaleString()}</span>
-          </div>
-          <div>
-            <span className="text-muted-foreground text-sm">
-              Diff (B − A):{" "}
-            </span>
-            <span
-              className={cn(
-                "font-medium",
-                totalVotesDiff === 0
-                  ? "text-muted-foreground"
-                  : totalVotesDiff > 0
-                    ? "text-green-600"
-                    : "text-red-600",
-              )}
-            >
-              {totalVotesDiff >= 0 ? "+" : ""}
-              {totalVotesDiff.toLocaleString()}
-            </span>
+          <div className="flex flex-wrap items-center gap-4">
+            <VersionSelect
+              versions={versions}
+              currentA={versionA}
+              currentB={versionB}
+            />
           </div>
         </CardContent>
       </Card>
